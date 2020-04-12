@@ -1,0 +1,2 @@
+user,password,results,Number of screenshots,observations
+CHERNANDEZ,inicio,AuthenticationFail,1,"element //input[@type='text'] not found, process finished"

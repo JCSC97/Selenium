@@ -1,0 +1,2 @@
+user,password,results,Number of screenshots,observations
+julio_csc@hotmail.com,Due12date34,AuthenticationFail,1,"element //input[@type='email'] not found, process finished"

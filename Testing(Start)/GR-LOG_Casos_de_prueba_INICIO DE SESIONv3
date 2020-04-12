@@ -1,0 +1,165 @@
+# ------------------------ DOCUMENTACIÓN --------------------------------
+# <copyright file="GR_LOG_Caso_de_Prueba_INICIO_SESIONv3" company="GLOUU TECHNOLOGIES">
+#     Copyright (c) Glouu Technologies. All rights reserved.
+# </copyright>
+# <author>Julio C. Saldivar</author>
+# <rastreo>GR_LOG_Caso_de_Prueba_INICIO_SESION</rastreo>
+# -----------------------------------------------------------------------
+from selenium import webdriver
+import selenium.common.exceptions as ES
+from selenium.webdriver.common.by import By
+import time, json
+from utilities.handy_wrappers import HandyWrappers
+from utilities.CSV_read_and_write import CSVclass
+import os
+import selenium.common.exceptions as Excep
+InLogin = 'user'
+InPass = 'password'
+ElementAccess = 'Iniciar Sesión'
+observations = ''
+results = ''
+locator = ''
+valueL = ''
+takeS = 0
+# <SingUp>
+# Clase
+# </SingUp>
+# <param></param>
+# <returns>(Revisar)Devolver true o false</returns>
+class SingUp():
+
+    def Login(self, user='', passwd="", url='', element={}):
+        self.takeS = 0
+        self.observations = 'without observations'
+        self.results = ''
+        self.valueL=''
+        self.locator=''
+        fieldnames = ['user', 'password', 'results', 'Number of screenshots', 'observations']
+
+        driver = webdriver.Chrome()
+        driver.get(url)
+        driver.maximize_window()
+        hw = HandyWrappers(driver)
+        if len(element) < 0:
+            self.locator = By.XPATH
+            self.valueL = "//input[@type='text']"
+        else:
+            self.locator = hw.getByType(element['locator'])
+            self.valueL = element['valueL']
+
+        driver.implicitly_wait(3)
+        self.takescrrenshot(driver, namescren='TestStartLogin', directory="ScreenshotsPruebaLogin\\")
+        # ---------------------------------------------------------------------------------------------------------------
+        A = driver.find_elements(self.locator, self.valueL)
+
+        if len(A) > 1:
+            for element in A:
+                try:
+                    element.send_keys(user)
+                except:
+                    pass
+        elif len(A) == 1:
+            A[0].send_keys(user)
+        else:
+            print("element "+self.valueL+" not found, process finished")
+            self.results= "AuthenticationFail"
+            self.observations= "element "+self.valueL+" not found, process finished"
+            data = [{'user': user, 'password': passwd, 'results': self.results,
+                     'Number of screenshots': self.takeS, 'observations': self.observations}]
+            self.createCVS(fieldnames, data)
+            return
+        B = driver.find_elements(By.XPATH, "//input[@type='password']")
+        if len(B) > 1:
+            for element in B:
+                try:
+                    element.send_keys(passwd)
+                except:
+                    pass
+        elif len(B) == 1:
+            B[0].send_keys(passwd)
+        else:
+            print("element for put password not found, process finished")
+            self.results = "AuthenticationFail"
+            self.observations = "element for put password not found, process finished"
+            data = [{'user': user, 'password': passwd, 'results': self.results,
+                     'Number of screenshots': self.takeS, 'observations': self.observations}]
+            self.createCVS(fieldnames, data)
+            return
+        self.takescrrenshot(driver, namescren="FillFields", directory="ScreenshotsPruebaLogin\\")
+        C = driver.find_elements(By.XPATH, "//*[@type='submit']")
+        if len(C) > 1:
+            for element in C:
+                try:
+                    element.click()
+                except:
+                    pass
+
+        elif len(C) == 1:
+            C[0].click()
+        else:
+            print("button to start session up not found, process finished")
+            self.results = "AuthenticationFail"
+            self.observations = "Button to start session not found, process finished"
+            data = [{'user': user, 'password': passwd, 'results': self.results,
+                     'Number of screenshots': self.takeS, 'observations': self.observations}]
+            self.createCVS(fieldnames, data)
+            return
+
+        time.sleep(3)
+        print("validating authentication")
+        V1 = hw.isElementPresent(locator=self.valueL, byType=self.locator)
+        V2 = hw.isElementPresent(locator="//input[@type='password']", byType=By.XPATH)
+        V3 = hw.isElementPresent(locator="//*[@type='password']", byType=By.XPATH)
+        if V1 and V2 and V3:
+            self.takescrrenshot(driver, namescren="AuthenticationFail", directory="ScreenshotsPruebaLogin\\")
+            self.results= "AuthenticationFail"
+
+        else:
+            self.takescrrenshot(driver, namescren="AuthenticationSuccessful", directory="ScreenshotsPruebaLogin\\")
+            self.results = "AuthenticationSuccessful"
+        data = [{'user': user, 'password': passwd, 'results': self.results,
+                 'Number of screenshots': self.takeS, 'observations': self.observations}]
+        self.createCVS(fieldnames, data)
+
+        driver.quit()
+
+
+    def takescrrenshot(self, driver, namescren='', directory=''):
+        try:
+            os.stat(directory)
+        except:
+            os.mkdir(directory)
+        fileName = str(round(time.time() * 1000)) + namescren + ".png"
+        screenshotDirectory = directory
+        destinationfile = screenshotDirectory + fileName
+        try:
+            driver.save_screenshot(destinationfile)
+            print("Screenshot saved to directory --> :: " + destinationfile)
+        except NotADirectoryError:
+            print("Not a directory issue")
+        self.takeS += 1
+    def createCVS(self, fieldnames, data):
+        csv = CSVclass()
+        csv.writeCSV(fieldnames=fieldnames, data=data, name="AuthenticationSuccessful")
+
+if __name__ == '__main__':
+    su = SingUp()
+
+    file= open("..//utilities//data.txt", 'r')
+    content = file.read()
+    index = content.find("#-comments-#")
+    content= content[:index]
+    print(content)
+    objetos = json.loads(content)
+    user = objetos['login']
+    passwd = objetos['passwd']
+    url = objetos['url']
+    locator = objetos['locatorLogin']
+    valueL = objetos['valueLocatorI']
+    element = {'locator': locator, 'valueL': valueL}
+    try:
+        su.Login(user=user, passwd=passwd, url=url, element=element)
+    except ES.WebDriverException:
+        print("Un error fuera del alcance del script se generó.\n"
+              "Asegurese de no manipular la ventana en ejecucion.\n"
+              "Y que el url que introdujo es correcto")
